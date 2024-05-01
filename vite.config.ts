@@ -23,7 +23,7 @@ export default defineConfig({
 			overlay: {
 				initialIsOpen: false
 			},
-			typescript: true
+			typescript: false
 		}),
 		nodePolyfills(
 			// We only need a `global` injected, for CodeMirror.
