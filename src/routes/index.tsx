@@ -8,6 +8,7 @@ import {StoryPlayRoute} from './story-play';
 import {StoryProofRoute} from './story-proof';
 import {StoryTestRoute} from './story-test';
 import {WelcomeRoute} from './welcome';
+import {ExtensionWrapper} from '../wolfgames-extension/extension-wrapper';
 
 export const Routes: React.FC = () => {
 	const {prefs} = usePrefsContext();
@@ -19,45 +20,47 @@ export const Routes: React.FC = () => {
 
 	return (
 		<HashRouter>
-			{prefs.welcomeSeen ? (
-				<Switch>
-					<Route exact path="/">
-						<StoryListRoute />
-					</Route>
-					<Route path="/story-formats">
-						<StoryFormatListRoute />
-					</Route>
-					<Route path="/welcome">
-						<WelcomeRoute />
-					</Route>
-					<Route path="/stories/:storyId/play">
-						<StoryPlayRoute />
-					</Route>
-					<Route path="/stories/:storyId/proof">
-						<StoryProofRoute />
-					</Route>
-					<Route path="/stories/:storyId/test/:passageId">
-						<StoryTestRoute />
-					</Route>
-					<Route path="/stories/:storyId/test">
-						<StoryTestRoute />
-					</Route>
-					<Route path="/stories/:storyId">
-						<StoryEditRoute />
-					</Route>
-					<Route
-						path="*"
-						render={path => {
-							console.warn(
-								`No route for path "${path.location.pathname}", rendering story list`
-							);
-							return <StoryListRoute />;
-						}}
-					></Route>
-				</Switch>
-			) : (
-				<WelcomeRoute />
-			)}
+      <ExtensionWrapper>
+        {prefs.welcomeSeen ? (
+          <Switch>
+            <Route exact path="/">
+              <StoryListRoute />
+            </Route>
+            <Route path="/story-formats">
+              <StoryFormatListRoute />
+            </Route>
+            <Route path="/welcome">
+              <WelcomeRoute />
+            </Route>
+            <Route path="/stories/:storyId/play">
+              <StoryPlayRoute />
+            </Route>
+            <Route path="/stories/:storyId/proof">
+              <StoryProofRoute />
+            </Route>
+            <Route path="/stories/:storyId/test/:passageId">
+              <StoryTestRoute />
+            </Route>
+            <Route path="/stories/:storyId/test">
+              <StoryTestRoute />
+            </Route>
+            <Route path="/stories/:storyId">
+              <StoryEditRoute />
+            </Route>
+            <Route
+              path="*"
+              render={path => {
+                console.warn(
+                  `No route for path "${path.location.pathname}", rendering story list`
+                );
+                return <StoryListRoute />;
+              }}
+            ></Route>
+          </Switch>
+        ) : (
+          <WelcomeRoute />
+        )}
+      </ExtensionWrapper>
 		</HashRouter>
 	);
 };

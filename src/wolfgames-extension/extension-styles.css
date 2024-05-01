@@ -1,0 +1,10 @@
+div .route-toolbar-top {
+	& > button {
+		display: none;
+	}
+	& > ul {
+		:nth-child(4) {
+		    display: none;
+		}
+	}
+}

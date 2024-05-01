@@ -32,6 +32,8 @@ export default defineConfig({
 		react()
 	],
 	server: {
-		open: true
+    host: 'localhost',
+    port: 9006,
+    open: true
 	}
 });
