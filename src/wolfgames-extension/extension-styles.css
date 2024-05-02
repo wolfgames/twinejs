@@ -1,10 +1,10 @@
 div .route-toolbar-top {
 	& > button {
-		display: none;
+		display: block;
 	}
 	& > ul {
 		:nth-child(4) {
-		    display: none;
+		    display: block;
 		}
 	}
 }

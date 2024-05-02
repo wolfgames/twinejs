@@ -127,6 +127,8 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 				initiationHandler
 			);
 		};
+    // @ts-ignore
+    // eslint-disable-next-line
 	}, [messagingService?.isSetUp]);
 
 	useEffect(() => {
