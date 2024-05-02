@@ -38,11 +38,15 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 
 	storiesRef.current = stories;
 
+  useEffect(() => {
+    prefsDispatch(setPref('welcomeSeen', true));
+  }, [prefsDispatch]);
+
 	useEffect(() => {
 		if (isInitiated && stories.length) {
 			history.replace(`/stories/${stories[0].id}`);
 		}
-	}, [stories, isInitiated]);
+	}, [stories, isInitiated, history]);
 
 	const [messagingService, setMessagingService] = useState<MessagingService<
 		MessagingSlice.Twine,
@@ -62,7 +66,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 
 			return cleanup;
 		}
-	}, []);
+	}, [messagingService]);
 
 	useEffect(() => {
 		if (!messagingService || !messagingService.isSetUp) {
@@ -192,7 +196,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 		return () => {
 			messagingService.sub(MessagingEventType.TwinejsUpdateData, updateHandler);
 		};
-	}, [messagingService]);
+	}, [messagingService, dispatch]);
 
 	useEffect(() => {
 		if (!messagingService || !messagingService.isSetUp) {
@@ -211,7 +215,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 				updateHandler
 			);
 		};
-	}, [messagingService]);
+	}, [messagingService, prefsDispatch]);
 
 	return <>{children}</>;
 };
