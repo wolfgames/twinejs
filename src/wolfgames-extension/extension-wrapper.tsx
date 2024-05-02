@@ -66,7 +66,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 
 			return cleanup;
 		}
-	}, [messagingService]);
+	}, []);
 
 	useEffect(() => {
 		if (!messagingService || !messagingService.isSetUp) {
@@ -198,7 +198,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 		return () => {
 			messagingService.sub(MessagingEventType.TwinejsUpdateData, updateHandler);
 		};
-	}, [messagingService, dispatch]);
+	}, [messagingService]);
 
 	useEffect(() => {
 		if (!messagingService || !messagingService.isSetUp) {
@@ -217,7 +217,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 				updateHandler
 			);
 		};
-	}, [messagingService, prefsDispatch]);
+	}, [messagingService]);
 
 	return <>{children}</>;
 };
