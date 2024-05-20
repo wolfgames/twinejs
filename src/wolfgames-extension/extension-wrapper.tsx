@@ -16,7 +16,7 @@ import {
 	updatePassage,
 	useStoriesContext
 } from '../store/stories';
-import {useHistory} from 'react-router-dom';
+import { useHistory, useLocation } from 'react-router-dom';
 import {setPref, usePrefsContext} from '../store/prefs';
 
 import './extension-styles.css';
@@ -29,11 +29,14 @@ import {TwinejsUpdatePrefsEvent} from '../../../shared/messaging/events/twinejs-
 
 const evidenceDataNodeName = 'Evidence data';
 
+let isInitiated= false;
+const setIsInitiated = (v: boolean) => isInitiated = v;
+
 export const ExtensionWrapper: React.FC = ({children}) => {
 	const history = useHistory();
+	const {pathname} = useLocation();
 	const {dispatch: prefsDispatch, prefs} = usePrefsContext();
 	const {dispatch, stories} = useStoriesContext();
-	const [isInitiated, setIsInitiated] = useState(false);
 	const storiesRef = useRef(stories);
 
 	storiesRef.current = stories;
@@ -42,11 +45,11 @@ export const ExtensionWrapper: React.FC = ({children}) => {
     prefsDispatch(setPref('welcomeSeen', true));
   }, [prefsDispatch]);
 
-	useEffect(() => {
-		if (isInitiated && stories.length) {
-			history.replace(`/stories/${stories[0].id}`);
-		}
-	}, [stories, isInitiated, history]);
+  useEffect(() => {
+    if (isInitiated && stories.length) {
+      history.replace(`/stories/${stories[0].id}`);
+    }
+  }, [stories, history, pathname]);
 
 	const [messagingService, setMessagingService] = useState<MessagingService<
 		MessagingSlice.Twine,
@@ -54,7 +57,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 	> | null>(null);
 
 	useEffect(() => {
-		if (!messagingService) {
+    if (!messagingService) {
 			const newMessagingService = new MessagingService();
 
 			const {cleanup, initiationDonePromise} =
@@ -66,23 +69,28 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 
 			return cleanup;
 		}
-	}, []);
+    // @ts-ignore
+    // eslint-disable-next-line
+  }, []);
 
 	useEffect(() => {
 		if (!messagingService || !messagingService.isSetUp) {
 			return;
 		}
 
-		const initiationHandler = (message: TwinejsInitiateEvent) => {
-			stories.forEach(s => dispatch(deleteStory(s)));
+    const initiationHandler = (message: TwinejsInitiateEvent) => {
+      setIsInitiated(false);
+      history.replace('/');
+      storiesRef.current.forEach(s => dispatch(deleteStory(s)));
+      storiesRef.current = [];
       prefsDispatch(setPref('appTheme', message.data.theme));
 
 			if ('source' in message.data) {
 				const newStory = storyFromTwee(message.data.source);
 
-				dispatch(importStories([newStory], []));
-
 				setIsInitiated(true);
+
+				dispatch(importStories([newStory], []));
 
 				messagingService.send(new TwinejsInitiationDoneEvent(null));
 
@@ -90,6 +98,8 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 			}
 
 			const passageId = Math.random().toString();
+
+      setIsInitiated(true);
 
       createStory([], prefs, {
 				name: Math.random().toString(),
@@ -114,8 +124,6 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 			})(dispatch, () => []);
 
 			messagingService.send(new TwinejsInitiationDoneEvent(null));
-
-			setIsInitiated(true);
 		};
 
 		messagingService.sub(MessagingEventType.TwinejsInitiate, initiationHandler);
@@ -153,7 +161,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 		messagingService.sub(MessagingEventType.TwinejsExport, exportHandler);
 
 		return () => {
-			messagingService.sub(MessagingEventType.TwinejsExport, exportHandler);
+			messagingService.unsub(MessagingEventType.TwinejsExport, exportHandler);
 		};
 	}, [messagingService]);
 
@@ -196,8 +204,9 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 		messagingService.sub(MessagingEventType.TwinejsUpdateData, updateHandler);
 
 		return () => {
-			messagingService.sub(MessagingEventType.TwinejsUpdateData, updateHandler);
+			messagingService.unsub(MessagingEventType.TwinejsUpdateData, updateHandler);
 		};
+  // eslint-disable-next-line
 	}, [messagingService]);
 
 	useEffect(() => {
@@ -212,11 +221,12 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 		messagingService.sub(MessagingEventType.TwinejsUpdatePrefs, updateHandler);
 
 		return () => {
-			messagingService.sub(
+			messagingService.unsub(
 				MessagingEventType.TwinejsUpdatePrefs,
 				updateHandler
 			);
 		};
+  // eslint-disable-next-line
 	}, [messagingService]);
 
 	return <>{children}</>;
