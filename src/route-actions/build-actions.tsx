@@ -18,12 +18,13 @@ import {usePublishing} from '../store/use-publishing';
 import {useStoryLaunch} from '../store/use-story-launch';
 import {saveHtml, saveTwee} from '../util/save-file';
 import {storyToTwee} from '../util/twee';
+import { buildActionsWrapper } from '../wolfgames-extension/build-actions-wrapper';
 
 export interface BuildActionsProps {
 	story?: Story;
 }
 
-export const BuildActions: React.FC<BuildActionsProps> = ({story}) => {
+export const BuildActions: React.FC<BuildActionsProps> = buildActionsWrapper<BuildActionsProps>(({story}) => {
 	const {publishStory} = usePublishing();
 	const [playError, setPlayError] = React.useState<Error>();
 	const [proofError, setProofError] = React.useState<Error>();
@@ -189,4 +190,4 @@ export const BuildActions: React.FC<BuildActionsProps> = ({story}) => {
 			/>
 		</ButtonBar>
 	);
-};
+});
