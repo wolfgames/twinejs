@@ -26,6 +26,7 @@ import {TwinejsUpdateDataEvent} from '../../../shared/messaging/events/twinejs-u
 import {evidenceDataMapper} from './evidence-data-mapper';
 import {createEvidencePassage} from './create-evidence-passage.action';
 import {TwinejsUpdatePrefsEvent} from '../../../shared/messaging/events/twinejs-update-prefs.event';
+import { TwinejsAddStoryItemsEvent } from '../../../shared/messaging/events/twinejs-add-story-items.event';
 
 const evidenceDataNodeName = 'Evidence data';
 
@@ -208,6 +209,78 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 		};
   // eslint-disable-next-line
 	}, [messagingService]);
+
+	useEffect(() => {
+		if (!messagingService || !messagingService.isSetUp) {
+			return;
+		}
+
+		const addItemsHandler = (message: TwinejsAddStoryItemsEvent) => {
+			const story = storiesRef.current[0];
+
+			if (!story) {
+				return;
+			}
+
+      let maxPassageX = 0;
+      const currentPassageNamesSet = new Set(story.passages.map(p => {
+        if (p.left > maxPassageX) {
+          maxPassageX = p.left;
+        }
+
+        return p.name;
+      }));
+
+      const getUniqueVersion = (name: string, id = 0): string => {
+        if (currentPassageNamesSet.has(name)) {
+          return getUniqueVersion(`${name}${id}`, id + 1);
+        }
+
+        return name;
+      };
+
+      const passagesToAdd = message.data.items.map(
+        item => ({ ...item, name: getUniqueVersion(item.name) })
+      );
+      const passagesToAddGrouped = passagesToAdd.reduce<Record<string, TwinejsAddStoryItemsEvent['data']['items'][0]>>((acc, passage) => {
+        acc[passage.uid] = passage;
+
+        return acc;
+      }, {});
+
+      const passagesPathsMap = message.data.relations.reduce<Record<string, Array<string>>>((acc, relation) => {
+        if (acc[relation.sourceUid]) {
+          acc[relation.sourceUid].push(passagesToAddGrouped[relation.targetUid].name);
+        } else {
+          acc[relation.sourceUid] = [passagesToAddGrouped[relation.targetUid].name];
+        }
+
+        return acc;
+      }, {});
+
+      const basePassageX = maxPassageX + 200;
+
+      passagesToAdd.forEach(passage => {
+        const { x, y } = message.data.nodePositions[passage.uid] || { x: 0, y: 0 };
+
+        dispatch(
+          createEvidencePassage(
+            story,
+            basePassageX + x * 4,
+            y * 4,
+            passage.name,
+            `${passage.description}\n\n${passagesPathsMap[passage.uid]?.map(target => `[[${target}]]`).join('\n')}`
+          )
+        );
+      });
+		};
+
+		messagingService.sub(MessagingEventType.AddStoryItems, addItemsHandler);
+
+		return () => {
+			messagingService.unsub(MessagingEventType.AddStoryItems, addItemsHandler);
+		};
+	}, [messagingService, dispatch]);
 
 	useEffect(() => {
 		if (!messagingService || !messagingService.isSetUp) {
