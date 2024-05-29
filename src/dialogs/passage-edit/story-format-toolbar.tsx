@@ -8,6 +8,7 @@ import {ButtonBar} from '../../components/container/button-bar';
 import {IconButton} from '../../components/control/icon-button';
 import {MenuButton} from '../../components/control/menu-button';
 import './story-format-toolbar.css';
+import { withWolfgames } from '../../wolfgames-extension/passage-edit-toolbar-hoc';
 
 export interface StoryFormatToolbarProps {
 	disabled?: boolean;
@@ -16,7 +17,7 @@ export interface StoryFormatToolbarProps {
 	storyFormat: StoryFormat;
 }
 
-export const StoryFormatToolbar: React.FC<StoryFormatToolbarProps> = props => {
+export const StoryFormatToolbar: React.FC<StoryFormatToolbarProps> = withWolfgames(props => {
 	const {disabled, editor, onExecCommand, storyFormat} = props;
 	const containerRef = React.useRef<HTMLDivElement>(null);
 	const appTheme = useComputedTheme();
@@ -133,4 +134,4 @@ export const StoryFormatToolbar: React.FC<StoryFormatToolbarProps> = props => {
 			</ButtonBar>
 		</div>
 	);
-};
+});

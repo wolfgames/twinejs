@@ -1,6 +1,6 @@
 import {CreatePassageAction, passageDefaults, Story} from '../store/stories';
 
-export function createEvidencePassage(
+export function createFooterPassage(
 	story: Story,
 	centerX: number,
 	centerY: number,
@@ -37,6 +37,7 @@ export function createEvidencePassage(
 			story: story.id,
 			name,
       text,
+      tags: ['footer'],
 		}
 	};
 }

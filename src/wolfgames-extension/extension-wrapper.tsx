@@ -23,12 +23,15 @@ import './extension-styles.css';
 import {storyFromTwee, storyToTwee} from '../util/twee';
 import {TwinejsExportResponseEvent} from '../../../shared/messaging/events/twinejs-export-response.event';
 import {TwinejsUpdateDataEvent} from '../../../shared/messaging/events/twinejs-update-data.event';
-import {evidenceDataMapper} from './evidence-data-mapper';
-import {createEvidencePassage} from './create-evidence-passage.action';
+import {startupDataMapper} from './startup-data-mapper';
+import {createStartupPassage} from './create-startup-passage.action';
 import {TwinejsUpdatePrefsEvent} from '../../../shared/messaging/events/twinejs-update-prefs.event';
 import { TwinejsAddStoryItemsEvent } from '../../../shared/messaging/events/twinejs-add-story-items.event';
+import { createFooterPassage } from './create-footer-passage.action';
+import { footerData } from './footer-data';
 
-const evidenceDataNodeName = 'Evidence data';
+const startupDataNodeName = 'Startup';
+const footerDataNodeName = 'Footer';
 
 let isInitiated= false;
 const setIsInitiated = (v: boolean) => isInitiated = v;
@@ -112,15 +115,28 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 						left: 200,
 						top: 200,
 						id: passageId,
-            text: '(set: $entry to (passage:)\'s name)\n(if:visits is 1)[(redirect: "Evidence data")]'
+            text: ''
 					},
 					{
 						...passageDefaults(),
 						id: Math.random().toString(),
 						story: '',
-						name: evidenceDataNodeName,
-						text: evidenceDataMapper(message.data.evidence)
-					}
+						left: 0,
+						top: 0,
+            tags: ['startup'],
+						name: startupDataNodeName,
+						text: startupDataMapper(message.data.evidence)
+					},
+					{
+						...passageDefaults(),
+						id: Math.random().toString(),
+						story: '',
+						left: 0,
+						top: 150,
+            tags: ['footer'],
+						name: footerDataNodeName,
+						text: footerData(),
+					},
 				]
 			})(dispatch, () => []);
 
@@ -178,24 +194,47 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 				return;
 			}
 
-			const passage = story.passages.find(p => p.name === evidenceDataNodeName);
+			const startupPassage = story.passages.find(p => p.name === startupDataNodeName);
 
-			if (!passage) {
+			if (!startupPassage) {
 				dispatch(
-					createEvidencePassage(
+					createStartupPassage(
 						story,
 						0,
 						0,
-						evidenceDataNodeName,
-						evidenceDataMapper(message.data.evidence)
+						startupDataNodeName,
+						startupDataMapper(message.data.evidence)
 					)
 				);
 			} else {
 				dispatch(
 					updatePassage(
 						story,
-						passage,
-						{text: evidenceDataMapper(message.data.evidence)},
+						startupPassage,
+						{text: startupDataMapper(message.data.evidence)},
+						{dontUpdateOthers: true}
+					)
+				);
+			}
+
+			const footerPassage = story.passages.find(p => p.name === footerDataNodeName);
+
+			if (!footerPassage) {
+				dispatch(
+          createFooterPassage(
+						story,
+						0,
+						150,
+						footerDataNodeName,
+            footerData()
+					)
+				);
+			} else {
+				dispatch(
+					updatePassage(
+						story,
+            footerPassage,
+						{text: footerData()},
 						{dontUpdateOthers: true}
 					)
 				);
@@ -264,7 +303,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
         const { x, y } = message.data.nodePositions[passage.uid] || { x: 0, y: 0 };
 
         dispatch(
-          createEvidencePassage(
+          createStartupPassage(
             story,
             basePassageX + x * 4,
             y * 4,
