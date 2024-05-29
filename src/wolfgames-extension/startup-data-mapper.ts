@@ -44,7 +44,7 @@ export const startupDataMapper = (evidenceData: TwineEvidence) => {
 		i: TwineEvidence[keyof TwineEvidence][0]
 	) => {
 		return `(dm:${Object.entries(i)
-			.flatMap(([iKey, iValue]) => [`"${iKey}"`, `"${iValue}"`])
+			.flatMap(([iKey, iValue]) => [`"${iKey}"`, `"${iValue.replace('"', '\\"')}"`])
 			.join(',')})`;
 	};
 
