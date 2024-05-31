@@ -1,11 +1,12 @@
 import {CreatePassageAction, passageDefaults, Story} from '../store/stories';
 
-export function createFooterPassage(
+export function createCustomPassage(
 	story: Story,
 	centerX: number,
 	centerY: number,
 	name: string,
-	text: string
+	text: string,
+  tags: Array<string>,
 ): CreatePassageAction {
 	if (!Number.isFinite(centerX) || !Number.isFinite(centerY)) {
 		throw new Error('Center must be a finite coordinate pair');
@@ -37,7 +38,7 @@ export function createFooterPassage(
 			story: story.id,
 			name,
       text,
-      tags: ['footer'],
+      tags,
 		}
 	};
 }

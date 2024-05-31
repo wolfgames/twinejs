@@ -27,11 +27,13 @@ import {startupDataMapper} from './startup-data-mapper';
 import {createStartupPassage} from './create-startup-passage.action';
 import {TwinejsUpdatePrefsEvent} from '../../../shared/messaging/events/twinejs-update-prefs.event';
 import { TwinejsAddStoryItemsEvent } from '../../../shared/messaging/events/twinejs-add-story-items.event';
-import { createFooterPassage } from './create-footer-passage.action';
+import { createCustomPassage } from './create-custom-passage.action';
 import { footerData } from './footer-data';
+import { imagesData } from './images-data';
 
 const startupDataNodeName = 'Startup';
 const footerDataNodeName = 'Footer';
+const imagesDataNodeName = 'Images';
 
 let isInitiated= false;
 const setIsInitiated = (v: boolean) => isInitiated = v;
@@ -132,10 +134,20 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 						id: Math.random().toString(),
 						story: '',
 						left: 0,
-						top: 150,
+						top: 100,
             tags: ['footer'],
 						name: footerDataNodeName,
 						text: footerData(),
+					},
+					{
+						...passageDefaults(),
+						id: Math.random().toString(),
+						story: '',
+						left: 0,
+						top: 200,
+            tags: ['startup'],
+						name: imagesDataNodeName,
+						text: imagesData(),
 					},
 				]
 			})(dispatch, () => []);
@@ -218,15 +230,17 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 			}
 
 			const footerPassage = story.passages.find(p => p.name === footerDataNodeName);
+			const imagesPassage = story.passages.find(p => p.name === imagesDataNodeName);
 
 			if (!footerPassage) {
 				dispatch(
-          createFooterPassage(
+          createCustomPassage(
 						story,
 						0,
 						150,
 						footerDataNodeName,
-            footerData()
+            footerData(),
+            ['footer'],
 					)
 				);
 			} else {
@@ -239,6 +253,28 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 					)
 				);
 			}
+
+      if (!imagesPassage) {
+        dispatch(
+          createCustomPassage(
+            story,
+            0,
+            250,
+            imagesDataNodeName,
+            imagesData(),
+              ['startup'],
+          )
+        );
+      } else {
+        dispatch(
+          updatePassage(
+            story,
+            imagesPassage,
+            {text: imagesData()},
+            {dontUpdateOthers: true}
+          )
+        );
+      }
 		};
 
 		messagingService.sub(MessagingEventType.TwinejsUpdateData, updateHandler);
