@@ -30,6 +30,9 @@ import { TwinejsAddStoryItemsEvent } from '../../../shared/messaging/events/twin
 import { createCustomPassage } from './create-custom-passage.action';
 import { footerData } from './footer-data';
 import { imagesData } from './images-data';
+import {
+  TwinejsGetStructureResponseEvent
+} from '../../../shared/messaging/events/twinejs-get-structure-response.event';
 
 const startupDataNodeName = 'Startup';
 const footerDataNodeName = 'Footer';
@@ -199,6 +202,35 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 			return;
 		}
 
+		const getStructureHandler = () => {
+			const story = storiesRef.current[0];
+
+			if (!story) return;
+
+			messagingService.send(
+				new TwinejsGetStructureResponseEvent({
+					passages: story.passages.map(p => ({
+            uid: p.id,
+            name: p.name,
+            content: p.text,
+          })),
+          startPassage: story.startPassage,
+				})
+			);
+		};
+
+		messagingService.sub(MessagingEventType.TwinejsGetStructure, getStructureHandler);
+
+		return () => {
+			messagingService.unsub(MessagingEventType.TwinejsGetStructure, getStructureHandler);
+		};
+	}, [messagingService]);
+
+	useEffect(() => {
+		if (!messagingService || !messagingService.isSetUp) {
+			return;
+		}
+
 		const updateHandler = (message: TwinejsUpdateDataEvent) => {
 			const story = storiesRef.current[0];
 
@@ -263,15 +295,6 @@ export const ExtensionWrapper: React.FC = ({children}) => {
             imagesDataNodeName,
             imagesData(),
               ['startup'],
-          )
-        );
-      } else {
-        dispatch(
-          updatePassage(
-            story,
-            imagesPassage,
-            {text: imagesData()},
-            {dontUpdateOthers: true}
           )
         );
       }
