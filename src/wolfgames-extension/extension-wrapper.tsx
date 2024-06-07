@@ -1,3 +1,4 @@
+import uuid from 'tiny-uuid';
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
 import {MessagingService} from '../../../shared/messaging/messaging.service';
@@ -106,7 +107,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 				return;
 			}
 
-			const passageId = Math.random().toString();
+			const passageId = uuid();
 
       setIsInitiated(true);
 
@@ -124,7 +125,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 					},
 					{
 						...passageDefaults(),
-						id: Math.random().toString(),
+						id: uuid(),
 						story: '',
 						left: 0,
 						top: 0,
@@ -134,7 +135,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 					},
 					{
 						...passageDefaults(),
-						id: Math.random().toString(),
+						id: uuid(),
 						story: '',
 						left: 0,
 						top: 100,
@@ -144,7 +145,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 					},
 					{
 						...passageDefaults(),
-						id: Math.random().toString(),
+						id: uuid(),
 						story: '',
 						left: 0,
 						top: 200,
