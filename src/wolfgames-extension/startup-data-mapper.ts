@@ -1,6 +1,6 @@
 import {TwineEvidence} from '../../../shared/messaging/messaging.types';
 
-const adaMacro = `(set: $ada to (macro: ...str-type _messages, [
+const botMacro = `(set: $bot to (macro: ...str-type _messages, [
   (set: _res to "ADA: >>> ")
   (for: each _message, ..._messages)[
     (set: _res to _res + "\\n* " + _message)
@@ -8,7 +8,7 @@ const adaMacro = `(set: $ada to (macro: ...str-type _messages, [
   (output-data: _res)
 ]))`;
 const imageAsText = `(text: "<" + "img src='" + $images's _imageUid + "'>")`;
-const adaMessage = `(set: $adaMessage to (macro: str-type _text, str-type _imageUid, [
+const botMessage = `(set: $botMessage to (macro: str-type _text, str-type _imageUid, [
   (set: _res to "")
   (if: _text is not "")[
      (set: _res to _res + _text)
@@ -110,8 +110,8 @@ export const startupDataMapper = (evidenceData: TwineEvidence) => {
 
 	return '(css: "display:none;")[\n' + [
     chatsVariable,
-    adaMacro,
-    adaMessage,
+    botMacro,
+    botMessage,
     evidenceMacro,
     actionMacro,
     passageMacro,

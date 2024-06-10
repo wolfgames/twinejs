@@ -46,7 +46,7 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
           }}
         />
         <IconButton
-          key="wolfgames-ada-button"
+          key="wolfgames-bot-button"
           disabled={props.disabled}
           icon={textCloudIcon}
           iconOnly={false}
