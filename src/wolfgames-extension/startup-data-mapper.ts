@@ -32,10 +32,37 @@ const actionMacro = `(set: $action to (macro: str-type _type, str-type _target, 
 const passageMacro = `(set: $passage to (macro: str-type _passage, [
   (output-data: "[" + "[" + _passage + "]" + "]")
 ]))`;
-const triggerMacro = `(set: $trigger to (macro: str-type _type, str-type _target, ...str-type _actions, [
-  (set: _res to _type + ": " + _target + " >>> ")
-  (for: each _action, ..._actions)[
-    (set: _res to _res + "\\n* " + _action)
+const triggerTargetMacro = `(set: $triggerTarget to (macro: str-type _type, str-type _target, [
+  (output-data: (dm:
+    "type", _type,
+    "target", _target
+  ))
+]))`;
+const triggerMacro = `(set: $trigger to (macro: any-type _targets, ...str-type _actions, [
+  (set: _res to "")
+  (if: _targets matches (a:
+    ...(datatype:(dm:
+      "type", str,
+      "target", str
+    ))
+  ))[
+    (for: each _target, ..._targets)[
+      (set: _res to _res + "\\n* " + _target's "type" + ": " + _target's "target")
+    ]
+    (set: _res to _res + " >>> ")
+    (for: each _action, ..._actions)[
+      (set: _res to _res + "\\n** " + _action)
+    ]
+  ](elseif: _targets matches (dm:
+    "type", str,
+    "target", str
+  ))[
+    (set: _res to _targets's "type" + ": " + _targets's "target" + " >>> ")
+    (for: each _action, ..._actions)[
+      (set: _res to _res + "\\n* " + _action)
+    ]
+  ](else:)[
+    (error: "Invalid input for trigger target param")
   ]
   (output-data: _res)
 ]))`;
@@ -115,6 +142,7 @@ export const startupDataMapper = (evidenceData: TwineEvidence) => {
     evidenceMacro,
     actionMacro,
     passageMacro,
+    triggerTargetMacro,
     triggerMacro,
     chatTriggerMacro,
     chatTriggerOffMacro,
