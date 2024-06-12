@@ -30,7 +30,7 @@ import {TwinejsUpdatePrefsEvent} from '../../../shared/messaging/events/twinejs-
 import { TwinejsAddStoryItemsEvent } from '../../../shared/messaging/events/twinejs-add-story-items.event';
 import { createCustomPassage } from './create-custom-passage.action';
 import { footerData } from './footer-data';
-import { imagesData } from './images-data';
+import { imagesData, mappersData } from './internal-nodes-data';
 import {
   TwinejsGetStructureResponseEvent
 } from '../../../shared/messaging/events/twinejs-get-structure-response.event';
@@ -38,6 +38,7 @@ import {
 const startupDataNodeName = 'Startup';
 const footerDataNodeName = 'Footer';
 const imagesDataNodeName = 'Images';
+const mappersDataNodeName = 'Mappers';
 
 let isInitiated= false;
 const setIsInitiated = (v: boolean) => isInitiated = v;
@@ -153,6 +154,16 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 						name: imagesDataNodeName,
 						text: imagesData(),
 					},
+					{
+						...passageDefaults(),
+						id: uuid(),
+						story: '',
+						left: 0,
+						top: 300,
+            tags: ['startup'],
+						name: mappersDataNodeName,
+						text: mappersData(),
+					},
 				]
 			})(dispatch, () => []);
 
@@ -264,6 +275,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 
 			const footerPassage = story.passages.find(p => p.name === footerDataNodeName);
 			const imagesPassage = story.passages.find(p => p.name === imagesDataNodeName);
+			const mappersPassage = story.passages.find(p => p.name === mappersDataNodeName);
 
 			if (!footerPassage) {
 				dispatch(
@@ -295,7 +307,20 @@ export const ExtensionWrapper: React.FC = ({children}) => {
             250,
             imagesDataNodeName,
             imagesData(),
-              ['startup'],
+            ['startup'],
+          )
+        );
+      }
+
+      if (!mappersPassage) {
+        dispatch(
+          createCustomPassage(
+            story,
+            0,
+            350,
+            mappersDataNodeName,
+            mappersData(),
+            ['startup'],
           )
         );
       }

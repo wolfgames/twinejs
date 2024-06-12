@@ -8,7 +8,13 @@ const botMacro = `(set: $bot to (macro: ...str-type _messages, [
   (output-data: _res)
 ]))`;
 const imageAsText = `(text: "<" + "img src='" + $images's _imageUid + "'>")`;
-const botMessage = `(set: $botMessage to (macro: str-type _text, str-type _imageUid, [
+const botMessage = `(set: $botMessage to (macro: str-type _text, str-type _identifier, [
+  (set: _imageUid to "")
+  (if: $uidAliasMap contains _identifier)[
+    (set: _imageUid to $uidAliasMap's _identifier)
+  ](else:)[
+    (set: _imageUid to _identifier)
+  ]
   (set: _res to "")
   (if: _text is not "")[
      (set: _res to _res + _text)
@@ -22,7 +28,13 @@ const botMessage = `(set: $botMessage to (macro: str-type _text, str-type _image
   ]
   (output-data: _res)
 ]))`;
-const evidenceMacro = `(set: $evidence to (macro: str-type _uid, [
+const evidenceMacro = `(set: $evidence to (macro: str-type _identifier, [
+  (set: _uid to "")
+  (if: $uidAliasMap contains _identifier)[
+    (set: _uid to $uidAliasMap's _identifier)
+  ](else:)[
+    (set: _uid to _identifier)
+  ]
   (set: $ev to (find: _e where _e's uid is _uid, ...$evidence_list)'s 1st)
   (output-data: "(Evidence) " + $ev's name)
 ]))`;

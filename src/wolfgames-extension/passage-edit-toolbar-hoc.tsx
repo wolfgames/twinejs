@@ -9,9 +9,11 @@ import { textCloudIcon } from './icons/text-cloud';
 export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarProps>) => {
   const WithWolfgames: React.FC<StoryFormatToolbarProps> = (props) => {
     // useEffect(() => {
-    //   console.log(`START`);
-    //   console.log('props', props);
-    // }, [props]);
+    //   props.editor?.on('cursorActivity', () => {
+    //     console.log('editor', props.editor?.getCursor());
+    //     console.log('editor', props.editor?.getLine(2));
+    //   })
+    // }, [props.editor]);
 
     return <>
       <div className="wolfgames-toolbar">
