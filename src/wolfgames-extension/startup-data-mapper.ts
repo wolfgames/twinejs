@@ -78,9 +78,13 @@ const chatTriggerMacro = `(set: $chatTrigger to (macro: str-type _uid, str-type 
   (output-data: _res)
 ]))`;
 const chatTriggerOffMacro = `(set: $chatTriggerOff to (macro: str-type _uid, [
-  (set: _button to $chats's _uid)
-  (move: $chats's _uid into _var)
-  (output-data: "BUTTON DISABLED: " + _button)
+  (if: $chats contains _uid)[
+    (set: _button to $chats's _uid)
+    (move: $chats's _uid into _var)
+    (output-data: "BUTTON DISABLED: " + _button)
+  ](else:)[
+    (output-data: "BUTTON DISABLED: " + "(colour: red)[Unregistered button]")
+  ]
 ]))`;
 
 const chatsVariable = '(set: $chats to (dm:))';
