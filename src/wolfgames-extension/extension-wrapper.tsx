@@ -1,6 +1,6 @@
 import uuid from 'tiny-uuid';
 import * as React from 'react';
-import {useEffect, useRef, useState} from 'react';
+import {createContext, useEffect, useRef, useState} from 'react';
 import {MessagingService} from '../../../shared/messaging/messaging.service';
 import {TwinejsMountDoneEvent} from '../../../shared/messaging/events/twinejs-mount-done.event';
 import {
@@ -37,11 +37,16 @@ import {
 
 const startupDataNodeName = 'Startup';
 const footerDataNodeName = 'Footer';
-const imagesDataNodeName = 'Images';
-const mappersDataNodeName = 'Mappers';
+export const imagesDataNodeName = 'Images';
+export const mappersDataNodeName = 'Mappers';
 
 let isInitiated= false;
 const setIsInitiated = (v: boolean) => isInitiated = v;
+
+export const MessagingServiceContext = createContext<MessagingService<
+  MessagingSlice.Twine,
+  MessagingSlice.App
+> | null>(null);
 
 export const ExtensionWrapper: React.FC = ({children}) => {
 	const history = useHistory();
@@ -426,5 +431,9 @@ export const ExtensionWrapper: React.FC = ({children}) => {
   // eslint-disable-next-line
 	}, [messagingService]);
 
-	return <>{children}</>;
+	return (
+    <MessagingServiceContext.Provider value={messagingService}>
+      {children}
+    </MessagingServiceContext.Provider>
+  );
 };

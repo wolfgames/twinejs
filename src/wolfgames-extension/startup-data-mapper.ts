@@ -1,6 +1,18 @@
 import {TwineEvidence} from '../../../shared/messaging/messaging.types';
 
-const botMacro = `(set: $bot to (macro: ...str-type _messages, [
+export enum TwineCustomCommand {
+  Bot = '$bot',
+  BotMessage = '$botMessage',
+  Evidence = '$evidence',
+  Action = '$action',
+  Passage = '$passage',
+  TriggerTarget = '$triggerTarget',
+  Trigger = '$trigger',
+  ChatTrigger = '$chatTrigger',
+  ChatTriggerOff = '$chatTriggerOff',
+}
+
+const botMacro = `(set: ${TwineCustomCommand.Bot} to (macro: ...str-type _messages, [
   (set: _res to "ADA: >>> ")
   (for: each _message, ..._messages)[
     (set: _res to _res + "\\n* " + _message)
@@ -8,7 +20,7 @@ const botMacro = `(set: $bot to (macro: ...str-type _messages, [
   (output-data: _res)
 ]))`;
 const imageAsText = `(text: "<" + "img src='" + $images's _imageUid + "'>")`;
-const botMessage = `(set: $botMessage to (macro: str-type _text, str-type _identifier, [
+const botMessage = `(set: ${TwineCustomCommand.BotMessage} to (macro: str-type _text, str-type _identifier, [
   (set: _imageUid to "")
   (if: $uidAliasMap contains _identifier)[
     (set: _imageUid to $uidAliasMap's _identifier)
@@ -28,7 +40,7 @@ const botMessage = `(set: $botMessage to (macro: str-type _text, str-type _ident
   ]
   (output-data: _res)
 ]))`;
-const evidenceMacro = `(set: $evidence to (macro: str-type _identifier, [
+const evidenceMacro = `(set: ${TwineCustomCommand.Evidence} to (macro: str-type _identifier, [
   (set: _uid to "")
   (if: $uidAliasMap contains _identifier)[
     (set: _uid to $uidAliasMap's _identifier)
@@ -38,19 +50,19 @@ const evidenceMacro = `(set: $evidence to (macro: str-type _identifier, [
   (set: $ev to (find: _e where _e's uid is _uid, ...$evidence_list)'s 1st)
   (output-data: "(Evidence) " + $ev's name)
 ]))`;
-const actionMacro = `(set: $action to (macro: str-type _type, str-type _target, [
+const actionMacro = `(set: ${TwineCustomCommand.Action} to (macro: str-type _type, str-type _target, [
   (output-data: _type + ": " + _target)
 ]))`;
-const passageMacro = `(set: $passage to (macro: str-type _passage, [
+const passageMacro = `(set: ${TwineCustomCommand.Passage} to (macro: str-type _passage, [
   (output-data: "[" + "[" + _passage + "]" + "]")
 ]))`;
-const triggerTargetMacro = `(set: $triggerTarget to (macro: str-type _type, str-type _target, [
+const triggerTargetMacro = `(set: ${TwineCustomCommand.TriggerTarget} to (macro: str-type _type, str-type _target, [
   (output-data: (dm:
     "type", _type,
     "target", _target
   ))
 ]))`;
-const triggerMacro = `(set: $trigger to (macro: any-type _targets, ...str-type _actions, [
+const triggerMacro = `(set: ${TwineCustomCommand.Trigger} to (macro: any-type _targets, ...str-type _actions, [
   (set: _res to "")
   (if: _targets matches (a:
     ...(datatype:(dm:
@@ -78,7 +90,7 @@ const triggerMacro = `(set: $trigger to (macro: any-type _targets, ...str-type _
   ]
   (output-data: _res)
 ]))`;
-const chatTriggerMacro = `(set: $chatTrigger to (macro: str-type _uid, str-type _type, str-type _text, ...str-type _actions, [
+const chatTriggerMacro = `(set: ${TwineCustomCommand.ChatTrigger} to (macro: str-type _uid, str-type _type, str-type _text, ...str-type _actions, [
   (if: _type is 'EXACT')[(set: $chats's _uid to _text)]
   (if: _type is 'EXACT')[(set: $prefix to "BUTTON")]
   (else-if: _type is 'AI-PROMPT')[(set: $prefix to "PROMPT")]
@@ -89,7 +101,7 @@ const chatTriggerMacro = `(set: $chatTrigger to (macro: str-type _uid, str-type 
   ]
   (output-data: _res)
 ]))`;
-const chatTriggerOffMacro = `(set: $chatTriggerOff to (macro: str-type _uid, [
+const chatTriggerOffMacro = `(set: ${TwineCustomCommand.ChatTriggerOff} to (macro: str-type _uid, [
   (if: $chats contains _uid)[
     (set: _button to $chats's _uid)
     (move: $chats's _uid into _var)

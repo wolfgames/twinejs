@@ -1,19 +1,281 @@
 import * as React from 'react';
-import { StoryFormatToolbarProps } from "../dialogs/passage-edit/story-format-toolbar";
+import * as ReactDOM from 'react-dom';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import { Editor } from 'codemirror';
+import { StoryFormatToolbarProps } from '../dialogs/passage-edit/story-format-toolbar';
 import { IconButton } from '../components/control/icon-button';
 import { magicIcon } from './icons/magic';
 import { writingIcon } from './icons/writing';
 import { addIcon } from './icons/add';
 import { textCloudIcon } from './icons/text-cloud';
+import { TwineCustomCommand } from './startup-data-mapper';
+import { omit } from 'lodash';
+import { imagesDataNodeName, mappersDataNodeName, MessagingServiceContext } from './extension-wrapper';
+import { TwinejsCommandEditEvent } from '../../../shared/messaging/events/twinejs-command-edit.event';
+import { MessagingEventType } from '../../../shared/messaging/messaging.types';
+import { EditCommandButton } from './components/edit-command-button';
+import {
+  TwinejsCommandEditResponseEvent
+} from '../../../shared/messaging/events/twinejs-command-edit-response.event';
+import { updateStory, useStoriesContext } from '../store/stories';
+
+const findWrappingBrackets = (s: string, startPosition: number, endPosition: number) => {
+  let leftCursor = startPosition;
+  let rightCursor = endPosition;
+
+  let leftClosedCount = 0;
+  let rightOpenedCount = 0;
+
+  do {
+    if (rightCursor >= s.length || leftCursor < 0) {
+      return null;
+    }
+    if (s[rightCursor] === '(' && rightCursor !== endPosition) {
+      rightOpenedCount++;
+    }
+    if (s[leftCursor] === ')' && leftCursor !== startPosition) {
+      leftClosedCount++;
+    }
+    if (s[rightCursor] !== ')') {
+      rightCursor++;
+    } else if (rightOpenedCount > 0) {
+      rightOpenedCount--;
+      rightCursor++;
+    }
+    if (s[leftCursor] !== '(') {
+      leftCursor--;
+    } else if (leftClosedCount > 0) {
+      leftClosedCount--;
+      leftCursor--;
+    }
+  } while (s[rightCursor] !== ')' || s[leftCursor] !== '(' || rightOpenedCount > 0 || leftClosedCount > 0);
+
+  return {
+    start: leftCursor,
+    end: rightCursor,
+  };
+};
+
+const manageableCommand = [
+  TwineCustomCommand.Bot,
+  TwineCustomCommand.Action,
+  TwineCustomCommand.Trigger,
+  TwineCustomCommand.ChatTrigger,
+  TwineCustomCommand.ChatTriggerOff,
+] as const;
+
+const extractManageableCommands = (value: string, index: number) => {
+  const res: Array<{
+    type: TwineCustomCommand,
+    value: string,
+    startPosition: number,
+    endPosition: number,
+  }> = [];
+
+  let currentCommand = null;
+  let currentStartIndex = index;
+  let currentEndIndex = index;
+
+  do {
+    currentCommand = findWrappingBrackets(value, currentStartIndex, currentEndIndex);
+
+    if (currentCommand) {
+      const commandCandidate = value.slice(currentCommand.start, currentCommand.end + 1);
+
+      const command = manageableCommand.find(mcp => commandCandidate.startsWith(`(${mcp}:`));
+
+      currentStartIndex = currentCommand.start - 1;
+      currentEndIndex = currentCommand.end + 1;
+
+      if (command) {
+        res.push({
+          type: command,
+          value: commandCandidate,
+          startPosition: currentStartIndex + 1,
+          endPosition: currentEndIndex,
+        });
+      }
+    }
+  } while (currentCommand !== null)
+
+  return res;
+};
 
 export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarProps>) => {
   const WithWolfgames: React.FC<StoryFormatToolbarProps> = (props) => {
-    // useEffect(() => {
-    //   props.editor?.on('cursorActivity', () => {
-    //     console.log('editor', props.editor?.getCursor());
-    //     console.log('editor', props.editor?.getLine(2));
-    //   })
-    // }, [props.editor]);
+    const messagingService = useContext(MessagingServiceContext);
+    const {dispatch, stories} = useStoriesContext();
+    const [selectedCommandsMap, setSelectedCommandsMap] = useState<
+      Map<
+        typeof manageableCommand[number],
+        {
+          value: string,
+          startPosition: number,
+          endPosition: number,
+        }
+      >
+    >(new Map());
+
+    const onCursorActivity = useCallback((editor: Editor) => {
+      const cursor = editor.getCursor();
+      const currentIndex = editor.indexFromPos(cursor);
+      const value = editor.getValue();
+
+      // TODO: improvements to implement:
+      // TODO: deal with a bug when "(" or ")" counts for command parsing
+      // TODO: add memo for non Wolfgames stuff (to not re-render entire editor because of custom toolbar)
+      // TODO: add parser for system passages which checks for dm item that aren't used and colors them red
+      // TODO: "format" button that runs all dm cleaners + orders passages
+
+      const manageableCommands = extractManageableCommands(value, currentIndex);
+
+      if (manageableCommands.length) {
+        setSelectedCommandsMap(manageableCommands.reduce((acc, mc) => {
+          acc.set(mc.type, omit(mc, 'type'));
+
+          return acc;
+        }, new Map()))
+      } else {
+        setSelectedCommandsMap(new Map());
+      }
+    }, []);
+
+    useEffect(() => {
+      const cursorActivityHandler = () => {
+        if (props.editor) {
+          onCursorActivity(props.editor);
+        }
+      };
+
+      props.editor?.on('cursorActivity', cursorActivityHandler)
+
+      return () => {
+        props.editor?.off('cursorActivity', cursorActivityHandler)
+      };
+    }, [props.editor, onCursorActivity]);
+
+    const updateSystemPassages = useCallback((
+      imagesPassageContent: string,
+      mappersPassageContent: string,
+    ) => {
+      const story = stories.at(0);
+
+      if (!story) {
+        return;
+      }
+
+      const uidAliasDataNode = story.passages.find(p => p.name === mappersDataNodeName);
+      const imagesDataNode = story.passages.find(p => p.name === imagesDataNodeName);
+
+      if (!imagesDataNode || !uidAliasDataNode) {
+        return;
+      }
+
+      dispatch(updateStory(stories, story, {
+        passages: story.passages.map(p => {
+          if (p.name === mappersDataNodeName) {
+            return {
+              ...p,
+              text: mappersPassageContent,
+            };
+          }
+          if (p.name === imagesDataNodeName) {
+            return {
+              ...p,
+              text: imagesPassageContent,
+            };
+          }
+
+          return p;
+        }),
+      }));
+    }, [stories, dispatch]);
+
+    useEffect(() => {
+      if (!props.editor || !messagingService) {
+        return;
+      }
+
+      const botEditResponseHandler = (message: TwinejsCommandEditResponseEvent) => {
+        if (!props.editor) {
+          return;
+        }
+
+        props.editor.replaceRange(
+          message.data.value,
+          props.editor.posFromIndex(message.data.startPosition),
+          props.editor.posFromIndex(message.data.endPosition),
+        );
+        updateSystemPassages(
+          message.data.imagesPassageContent,
+          message.data.mappersPassageContent,
+        )
+      };
+
+      messagingService.sub(MessagingEventType.TwinejsCommandEditResponse, botEditResponseHandler);
+
+      return () => {
+        messagingService.unsub(MessagingEventType.TwinejsCommandEditResponse, botEditResponseHandler);
+      };
+    }, [props.editor, messagingService, updateSystemPassages]);
+
+    const botClickHandler = useCallback(() => {
+      if (!props.editor || !messagingService) {
+        return;
+      }
+
+      const cursorPosition = props.editor.indexFromPos(props.editor.getCursor());
+
+      messagingService.send(new TwinejsCommandEditEvent({
+        command: '$bot',
+        initialValue: null,
+        imagesPassageContent: stories.at(0)?.passages.find(p => p.name === imagesDataNodeName)?.text || '',
+        mappersPassageContent: stories.at(0)?.passages.find(p => p.name === mappersDataNodeName)?.text || '',
+        startPosition: cursorPosition,
+        endPosition: cursorPosition,
+      }));
+    }, [props.editor, messagingService, stories]);
+
+    useEffect(() => {
+      if (!props.editor || !messagingService) {
+        return;
+      }
+
+      const widgets = [...selectedCommandsMap.entries()].map(([type, data], index) => {
+        if (!props.editor) {
+          throw new Error('Unexpected editor state');
+        }
+
+        const div = document.createElement("div");
+
+        ReactDOM.render(
+          <EditCommandButton key={`edit-command-button-${index}`} onClick={() => {
+            if (!props.editor || !messagingService) {
+              throw new Error('Unexpected editor state');
+            }
+
+            messagingService.send(new TwinejsCommandEditEvent({
+              command: type,
+              initialValue: data.value,
+              imagesPassageContent: stories.at(0)?.passages.find(p => p.name === imagesDataNodeName)?.text || '',
+              mappersPassageContent: stories.at(0)?.passages.find(p => p.name === mappersDataNodeName)?.text || '',
+              startPosition: data.startPosition,
+              endPosition: data.endPosition,
+            }));
+          }} />,
+          div
+        );
+
+        div.style.zIndex = '2';
+        props.editor.addWidget(props.editor.posFromIndex(data.endPosition), div, true);
+
+        return div;
+      });
+
+      return () => {
+        widgets.forEach(div => div.remove());
+      };
+    }, [props.editor, stories, messagingService, selectedCommandsMap]);
 
     return <>
       <div className="wolfgames-toolbar">
@@ -49,13 +311,12 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
         />
         <IconButton
           key="wolfgames-bot-button"
-          disabled={props.disabled}
+          disabled={props.disabled || !!selectedCommandsMap.size}
           icon={textCloudIcon}
           iconOnly={false}
+          // label={`${selectedCommandsMap.has(TwineCustomCommand.Bot) ? '(E)' : '(C)'} ADA`}
           label="ADA"
-          onClick={() => {
-            console.log('CLICKED');
-          }}
+          onClick={botClickHandler}
         />
       </div>
       <StoryFormatToolbar {...props} />
