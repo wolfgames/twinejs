@@ -20,7 +20,6 @@ import {
 } from '../../../shared/messaging/events/twinejs-command-edit-response.event';
 import { updateStory, useStoriesContext } from '../store/stories';
 import { LabeledMenuItem, MenuButton, MenuSeparator } from '../components/control/menu-button';
-import { useStoryFormatsContext } from '../store/story-formats';
 import { useDialogsContext } from '../dialogs';
 
 const findWrappingBrackets = (s: string, startPosition: number, endPosition: number) => {
