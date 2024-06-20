@@ -1,13 +1,14 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
+import {
+  IconCirclePlus,
+  IconWand,
+  IconMessageCircle
+} from '@tabler/icons';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { Editor } from 'codemirror';
 import { StoryFormatToolbarProps } from '../dialogs/passage-edit/story-format-toolbar';
 import { IconButton } from '../components/control/icon-button';
-import { magicIcon } from './icons/magic';
-import { writingIcon } from './icons/writing';
-import { addIcon } from './icons/add';
-import { textCloudIcon } from './icons/text-cloud';
 import { TwineCustomCommand } from './startup-data-mapper';
 import { omit } from 'lodash';
 import { imagesDataNodeName, mappersDataNodeName, MessagingServiceContext } from './extension-wrapper';
@@ -18,6 +19,9 @@ import {
   TwinejsCommandEditResponseEvent
 } from '../../../shared/messaging/events/twinejs-command-edit-response.event';
 import { updateStory, useStoriesContext } from '../store/stories';
+import { LabeledMenuItem, MenuButton, MenuSeparator } from '../components/control/menu-button';
+import { useStoryFormatsContext } from '../store/story-formats';
+import { useDialogsContext } from '../dialogs';
 
 const findWrappingBrackets = (s: string, startPosition: number, endPosition: number) => {
   let leftCursor = startPosition;
@@ -103,6 +107,7 @@ const extractManageableCommands = (value: string, index: number) => {
 
 export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarProps>) => {
   const WithWolfgames: React.FC<StoryFormatToolbarProps> = (props) => {
+    const { dialogs } = useDialogsContext();
     const messagingService = useContext(MessagingServiceContext);
     const {dispatch, stories} = useStoriesContext();
     const [selectedCommandsMap, setSelectedCommandsMap] = useState<
@@ -155,8 +160,8 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
     }, [props.editor, onCursorActivity]);
 
     const updateSystemPassages = useCallback((
-      imagesPassageContent: string,
-      mappersPassageContent: string,
+      imagesPassageContent?: string,
+      mappersPassageContent?: string,
     ) => {
       const story = stories.at(0);
 
@@ -173,13 +178,13 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
 
       dispatch(updateStory(stories, story, {
         passages: story.passages.map(p => {
-          if (p.name === mappersDataNodeName) {
+          if (p.name === mappersDataNodeName && mappersPassageContent !== undefined) {
             return {
               ...p,
               text: mappersPassageContent,
             };
           }
-          if (p.name === imagesDataNodeName) {
+          if (p.name === imagesDataNodeName && imagesPassageContent !== undefined) {
             return {
               ...p,
               text: imagesPassageContent,
@@ -225,6 +230,7 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
       }
 
       const cursorPosition = props.editor.indexFromPos(props.editor.getCursor());
+      const activePassageId = dialogs.at(0)?.props?.passageIds?.[0];
 
       messagingService.send(new TwinejsCommandEditEvent({
         command: '$bot',
@@ -233,8 +239,28 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
         mappersPassageContent: stories.at(0)?.passages.find(p => p.name === mappersDataNodeName)?.text || '',
         startPosition: cursorPosition,
         endPosition: cursorPosition,
+        currentPassageName: activePassageId && stories.at(0)?.passages.find(p => p.id === activePassageId)?.name,
       }));
-    }, [props.editor, messagingService, stories]);
+    }, [props.editor, messagingService, stories, dialogs]);
+
+    const createActionClickHandler = useCallback(() => {
+      if (!props.editor || !messagingService) {
+        return;
+      }
+
+      const cursorPosition = props.editor.indexFromPos(props.editor.getCursor());
+      const activePassageId = dialogs.at(0)?.props?.passageIds?.[0];
+
+      messagingService.send(new TwinejsCommandEditEvent({
+        command: '$action',
+        initialValue: null,
+        imagesPassageContent: stories.at(0)?.passages.find(p => p.name === imagesDataNodeName)?.text || '',
+        mappersPassageContent: stories.at(0)?.passages.find(p => p.name === mappersDataNodeName)?.text || '',
+        startPosition: cursorPosition,
+        endPosition: cursorPosition,
+        currentPassageName: activePassageId && stories.at(0)?.passages.find(p => p.id === activePassageId)?.name,
+      }));
+    }, [props.editor, messagingService, stories, dialogs]);
 
     useEffect(() => {
       if (!props.editor || !messagingService) {
@@ -254,6 +280,8 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
               throw new Error('Unexpected editor state');
             }
 
+            const activePassageId = dialogs.at(0)?.props?.passageIds?.[0];
+
             messagingService.send(new TwinejsCommandEditEvent({
               command: type,
               initialValue: data.value,
@@ -261,6 +289,7 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
               mappersPassageContent: stories.at(0)?.passages.find(p => p.name === mappersDataNodeName)?.text || '',
               startPosition: data.startPosition,
               endPosition: data.endPosition,
+              currentPassageName: activePassageId && stories.at(0)?.passages.find(p => p.id === activePassageId)?.name,
             }));
           }} />,
           div
@@ -275,46 +304,54 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
       return () => {
         widgets.forEach(div => div.remove());
       };
-    }, [props.editor, stories, messagingService, selectedCommandsMap]);
+    }, [props.editor, stories, dialogs, messagingService, selectedCommandsMap]);
 
     return <>
       <div className="wolfgames-toolbar">
         <IconButton
           key="wolfgames-generate-button"
           disabled={props.disabled}
-          icon={magicIcon}
+          icon={<IconWand />}
           iconOnly={false}
           label="Generate"
           onClick={() => {
             console.log('CLICKED');
           }}
         />
-        <IconButton
-          key="wolfgames-writing-button"
-          disabled={props.disabled}
-          icon={writingIcon}
-          iconOnly={false}
-          label="Writing"
-          onClick={() => {
-            console.log('CLICKED');
-          }}
-        />
-        <IconButton
-          key="wolfgames-link-evidence-button"
-          disabled={props.disabled}
-          icon={addIcon}
-          iconOnly={false}
-          label="Add evidence link"
-          onClick={() => {
-            console.log('CLICKED');
-          }}
+        <MenuButton
+          key="wolfgames-commands-menu-button"
+          disabled={props.disabled || !!selectedCommandsMap.size}
+          icon={<IconCirclePlus />}
+          label="Macros"
+          items={[
+            {
+              disabled: props.disabled || !!selectedCommandsMap.size,
+              label: 'Add Action',
+              onClick: createActionClickHandler,
+            },
+            {
+              disabled: props.disabled || !!selectedCommandsMap.size,
+              label: 'Add Trigger',
+              onClick: () => {}
+            },
+            {
+              disabled: props.disabled || !!selectedCommandsMap.size,
+              label: 'Add Chat Trigger',
+              onClick: () => {}
+            },
+            {
+              disabled: props.disabled || !!selectedCommandsMap.size,
+              label: 'Disable Chat Trigger',
+              onClick: () => {}
+            },
+            {separator: true}
+          ] satisfies (LabeledMenuItem | MenuSeparator)[]}
         />
         <IconButton
           key="wolfgames-bot-button"
           disabled={props.disabled || !!selectedCommandsMap.size}
-          icon={textCloudIcon}
+          icon={<IconMessageCircle />}
           iconOnly={false}
-          // label={`${selectedCommandsMap.has(TwineCustomCommand.Bot) ? '(E)' : '(C)'} ADA`}
           label="ADA"
           onClick={botClickHandler}
         />
