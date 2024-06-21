@@ -232,10 +232,8 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
       const activePassageId = dialogs.at(0)?.props?.passageIds?.[0];
 
       messagingService.send(new TwinejsCommandEditEvent({
-        command: '$bot',
+        command: TwineCustomCommand.Bot,
         initialValue: null,
-        imagesPassageContent: stories.at(0)?.passages.find(p => p.name === imagesDataNodeName)?.text || '',
-        mappersPassageContent: stories.at(0)?.passages.find(p => p.name === mappersDataNodeName)?.text || '',
         startPosition: cursorPosition,
         endPosition: cursorPosition,
         currentPassageName: activePassageId && stories.at(0)?.passages.find(p => p.id === activePassageId)?.name,
@@ -251,10 +249,26 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
       const activePassageId = dialogs.at(0)?.props?.passageIds?.[0];
 
       messagingService.send(new TwinejsCommandEditEvent({
-        command: '$action',
+        command: TwineCustomCommand.Action,
         initialValue: null,
-        imagesPassageContent: stories.at(0)?.passages.find(p => p.name === imagesDataNodeName)?.text || '',
-        mappersPassageContent: stories.at(0)?.passages.find(p => p.name === mappersDataNodeName)?.text || '',
+        startPosition: cursorPosition,
+        endPosition: cursorPosition,
+        currentPassageName: activePassageId && stories.at(0)?.passages.find(p => p.id === activePassageId)?.name,
+      }));
+    }, [props.editor, messagingService, stories, dialogs]);
+
+
+    const createChatTriggerOffHandler = useCallback(() => {
+      if (!props.editor || !messagingService) {
+        return;
+      }
+
+      const cursorPosition = props.editor.indexFromPos(props.editor.getCursor());
+      const activePassageId = dialogs.at(0)?.props?.passageIds?.[0];
+
+      messagingService.send(new TwinejsCommandEditEvent({
+        command: TwineCustomCommand.ChatTriggerOff,
+        initialValue: null,
         startPosition: cursorPosition,
         endPosition: cursorPosition,
         currentPassageName: activePassageId && stories.at(0)?.passages.find(p => p.id === activePassageId)?.name,
@@ -284,8 +298,6 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
             messagingService.send(new TwinejsCommandEditEvent({
               command: type,
               initialValue: data.value,
-              imagesPassageContent: stories.at(0)?.passages.find(p => p.name === imagesDataNodeName)?.text || '',
-              mappersPassageContent: stories.at(0)?.passages.find(p => p.name === mappersDataNodeName)?.text || '',
               startPosition: data.startPosition,
               endPosition: data.endPosition,
               currentPassageName: activePassageId && stories.at(0)?.passages.find(p => p.id === activePassageId)?.name,
@@ -338,12 +350,12 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
               label: 'Add Chat Trigger',
               onClick: () => {}
             },
+            {separator: true},
             {
               disabled: props.disabled || !!selectedCommandsMap.size,
               label: 'Disable Chat Trigger',
-              onClick: () => {}
+              onClick: createChatTriggerOffHandler,
             },
-            {separator: true}
           ] satisfies (LabeledMenuItem | MenuSeparator)[]}
         />
         <IconButton
