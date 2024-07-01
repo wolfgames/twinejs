@@ -1,4 +1,5 @@
-.edit-command-button-wrapper {
+.remove-command-button-wrapper {
+    color: red;
     width: 18px;
     height: 18px;
     cursor: pointer;

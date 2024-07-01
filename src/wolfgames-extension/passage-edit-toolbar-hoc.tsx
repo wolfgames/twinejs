@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom';
 import {
   IconCirclePlus,
   IconWand,
-  IconMessageCircle
+  IconMessageCircle,
 } from '@tabler/icons';
 import { useCallback, useContext, useEffect, useState } from 'react';
 import { Editor } from 'codemirror';
@@ -21,6 +21,8 @@ import {
 import { updateStory, useStoriesContext } from '../store/stories';
 import { LabeledMenuItem, MenuButton, MenuSeparator } from '../components/control/menu-button';
 import { useDialogsContext } from '../dialogs';
+import { RemoveCommandButton } from './components/remove-command-button';
+import './passage-edit-toolbar-hoc.css';
 
 const findWrappingBrackets = (s: string, startPosition: number, endPosition: number) => {
   let leftCursor = startPosition;
@@ -321,21 +323,34 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
         const div = document.createElement("div");
 
         ReactDOM.render(
-          <EditCommandButton key={`edit-command-button-${index}`} onClick={() => {
-            if (!props.editor || !messagingService) {
-              throw new Error('Unexpected editor state');
-            }
+          <div className="command-edit-widget-wrapper">
+            <EditCommandButton key={`edit-command-button-${index}`} onClick={() => {
+              if (!props.editor || !messagingService) {
+                throw new Error('Unexpected editor state');
+              }
 
-            const activePassageId = dialogs.at(0)?.props?.passageIds?.[0];
+              const activePassageId = dialogs.at(0)?.props?.passageIds?.[0];
 
-            messagingService.send(new TwinejsCommandEditEvent({
-              command: type,
-              initialValue: data.value,
-              startPosition: data.startPosition,
-              endPosition: data.endPosition,
-              currentPassageName: activePassageId && stories.at(0)?.passages.find(p => p.id === activePassageId)?.name,
-            }));
-          }} />,
+              messagingService.send(new TwinejsCommandEditEvent({
+                command: type,
+                initialValue: data.value,
+                startPosition: data.startPosition,
+                endPosition: data.endPosition,
+                currentPassageName: activePassageId && stories.at(0)?.passages.find(p => p.id === activePassageId)?.name,
+              }));
+            }} />
+            {index === selectedCommandsMap.size - 1 && <RemoveCommandButton onClick={() => {
+              if (!props.editor) {
+                return;
+              }
+              
+              props.editor.replaceRange(
+                '',
+                props.editor.posFromIndex(data.startPosition),
+                props.editor.posFromIndex(data.endPosition)
+              )
+            }} />}
+          </div>,
           div
         );
 
