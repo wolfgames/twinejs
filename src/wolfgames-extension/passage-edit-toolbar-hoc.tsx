@@ -274,6 +274,23 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
       }));
     }, [props.editor, messagingService, stories, dialogs]);
 
+    const createChatTriggerClickHandler = useCallback(() => {
+      if (!props.editor || !messagingService) {
+        return;
+      }
+
+      const cursorPosition = props.editor.indexFromPos(props.editor.getCursor());
+      const activePassageId = dialogs.at(0)?.props?.passageIds?.[0];
+
+      messagingService.send(new TwinejsCommandEditEvent({
+        command: TwineCustomCommand.ChatTrigger,
+        initialValue: null,
+        startPosition: cursorPosition,
+        endPosition: cursorPosition,
+        currentPassageName: activePassageId && stories.at(0)?.passages.find(p => p.id === activePassageId)?.name,
+      }));
+    }, [props.editor, messagingService, stories, dialogs]);
+
     const createChatTriggerOffHandler = useCallback(() => {
       if (!props.editor || !messagingService) {
         return;
@@ -364,7 +381,7 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
             {
               disabled: props.disabled || !!selectedCommandsMap.size,
               label: 'Add Chat Trigger',
-              onClick: () => {}
+              onClick: createChatTriggerClickHandler,
             },
             {separator: true},
             {
