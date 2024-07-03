@@ -198,11 +198,7 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
     }, [stories, dispatch]);
 
     useEffect(() => {
-      if (!props.editor || !messagingService) {
-        return;
-      }
-
-      const botEditResponseHandler = (message: TwinejsCommandEditResponseEvent) => {
+      const commandEditResponseHandler = (message: TwinejsCommandEditResponseEvent) => {
         if (!props.editor) {
           return;
         }
@@ -218,12 +214,18 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
         )
       };
 
-      messagingService.sub(MessagingEventType.TwinejsCommandEditResponse, botEditResponseHandler);
+      if (!props.editor || !messagingService || props.disabled) {
+        return () => {
+          messagingService?.unsub(MessagingEventType.TwinejsCommandEditResponse, commandEditResponseHandler);
+        };
+      }
+
+      messagingService.sub(MessagingEventType.TwinejsCommandEditResponse, commandEditResponseHandler);
 
       return () => {
-        messagingService.unsub(MessagingEventType.TwinejsCommandEditResponse, botEditResponseHandler);
+        messagingService.unsub(MessagingEventType.TwinejsCommandEditResponse, commandEditResponseHandler);
       };
-    }, [props.editor, messagingService, updateSystemPassages]);
+    }, [props.editor, props.disabled, messagingService, updateSystemPassages]);
 
     const botClickHandler = useCallback(() => {
       if (!props.editor || !messagingService) {

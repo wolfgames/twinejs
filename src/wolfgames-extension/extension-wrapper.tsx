@@ -393,12 +393,13 @@ export const ExtensionWrapper: React.FC = ({children}) => {
         const { x, y } = message.data.nodePositions[passage.uid] || { x: 0, y: 0 };
 
         dispatch(
-          createStartupPassage(
+          createCustomPassage(
             story,
             basePassageX + x * 4,
             y * 4,
             passage.name,
-            `${passage.description}\n\n${passagesPathsMap[passage.uid]?.map(target => `[[${target}]]`).join('\n')}`
+            `${passage.description}\n\n${passagesPathsMap[passage.uid]?.map(target => `[[${target}]]`).join('\n')}`,
+            []
           )
         );
       });
