@@ -23,6 +23,10 @@ import { LabeledMenuItem, MenuButton, MenuSeparator } from '../components/contro
 import { useDialogsContext } from '../dialogs';
 import { RemoveCommandButton } from './components/remove-command-button';
 import './passage-edit-toolbar-hoc.css';
+import { TwinejsGeneratePassageEvent } from '../../../shared/messaging/events/twinejs-generate-passage.event';
+import {
+  TwinejsGeneratePassageResponseEvent
+} from '../../../shared/messaging/events/twinejs-generate-passage-response.event';
 
 const findWrappingBrackets = (s: string, startPosition: number, endPosition: number) => {
   let leftCursor = startPosition;
@@ -227,6 +231,67 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
       };
     }, [props.editor, props.disabled, messagingService, updateSystemPassages]);
 
+
+    useEffect(() => {
+      const generatePassageResponseHandler = (message: TwinejsGeneratePassageResponseEvent) => {
+        const story = stories.at(0);
+
+        if (!story) {
+          return;
+        }
+
+        dispatch(updateStory(stories, story, {
+          passages: story.passages.map(p => {
+            if (p.id === message.data.currentPassageUid) {
+              return {
+                ...p,
+                text: message.data.content,
+              };
+            } else if (p.name === mappersDataNodeName && message.data.mappersPassageContent !== undefined) {
+              return {
+                ...p,
+                text: message.data.mappersPassageContent,
+              };
+            }
+
+            return p;
+          }),
+        }))
+      };
+
+      if (!messagingService) {
+        return;
+      }
+
+      messagingService.sub(MessagingEventType.TwinejsGeneratePassageResponse, generatePassageResponseHandler);
+
+      return () => {
+        messagingService.unsub(MessagingEventType.TwinejsGeneratePassageResponse, generatePassageResponseHandler);
+      };
+    }, [dispatch, stories, messagingService]);
+
+    const generateClickHandler = useCallback(() => {
+      if (!messagingService) {
+        return;
+      }
+
+      const activePassageId = dialogs.at(0)?.props?.passageIds?.[0];
+      const story = stories.at(0);
+
+      if (!story || !activePassageId) {
+        throw new Error('Invalid story passage selected');
+      }
+
+      messagingService.send(new TwinejsGeneratePassageEvent({
+        passages: story.passages.map(p => ({
+          uid: p.id,
+          name: p.name,
+          content: p.text,
+        })),
+        currentPassageUid: activePassageId
+      }));
+    }, [messagingService, stories, dialogs]);
+
     const botClickHandler = useCallback(() => {
       if (!props.editor || !messagingService) {
         return;
@@ -375,9 +440,7 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
           icon={<IconWand />}
           iconOnly={false}
           label="Generate"
-          onClick={() => {
-            console.log('CLICKED');
-          }}
+          onClick={generateClickHandler}
         />
         <MenuButton
           key="wolfgames-commands-menu-button"

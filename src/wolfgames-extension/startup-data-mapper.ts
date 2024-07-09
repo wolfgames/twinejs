@@ -149,6 +149,9 @@ export const startupDataMapper = (evidenceData: TwineEvidence) => {
 	const introductionsMapped = `(set: $introductions_evidence to (a:${evidenceData.introductions
 		.map(interviewEvidenceToData)
 		.join(',')}))`;
+	const nonesMapped = `(set: $nones_evidence to (a:${evidenceData.nones
+		.map(interviewEvidenceToData)
+		.join(',')}))`;
 
   // TODO: extract all the duplicated names into constants (evidence_list as well)
   const evidenceList = `(set: $evidence_list to (a:
@@ -160,7 +163,8 @@ export const startupDataMapper = (evidenceData: TwineEvidence) => {
   ...$voice_recordings_evidence,
   ...$interviews_evidence,
   ...$victims_evidence,
-  ...$introductions_evidence
+  ...$introductions_evidence,
+  ...$nones_evidence
 ))`;
 
 	return '(css: "display:none;")[\n' + [
@@ -183,6 +187,7 @@ export const startupDataMapper = (evidenceData: TwineEvidence) => {
 		interviewsMapped,
 		victimsMapped,
 		introductionsMapped,
+    nonesMapped,
     evidenceList,
 	].join('\n\n') + '\n]';
 };
