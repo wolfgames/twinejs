@@ -283,11 +283,13 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
       }
 
       messagingService.send(new TwinejsGeneratePassageEvent({
-        passages: story.passages.map(p => ({
-          uid: p.id,
-          name: p.name,
-          content: p.text,
-        })),
+        passages: story.passages
+          .filter((p) => !['Startup', 'Footer', 'Images', 'Mappers'].includes(p.name))
+          .map(p => ({
+            uid: p.id,
+            name: p.name,
+            content: p.text,
+          })),
         currentPassageUid: activePassageId
       }));
     }, [messagingService, stories, dialogs]);
