@@ -28,41 +28,57 @@ import {
   TwinejsGeneratePassageResponseEvent
 } from '../../../shared/messaging/events/twinejs-generate-passage-response.event';
 
-const findWrappingBrackets = (s: string, startPosition: number, endPosition: number) => {
+const findWrappingBracketsNested = (s: string, startPosition: number, endPosition: number, currentQuotesState = false) => {
   let leftCursor = startPosition;
   let rightCursor = endPosition;
 
   let leftClosedCount = 0;
   let rightOpenedCount = 0;
 
+  let isLeftInDoubleQuotes = currentQuotesState;
+  let isRightInDoubleQuotes = currentQuotesState;
+
   do {
     if (rightCursor >= s.length || leftCursor < 0) {
       return null;
     }
-    if (s[rightCursor] === '(' && rightCursor !== endPosition) {
+
+    if (s[leftCursor] === '"' && s[leftCursor - 1] !== '\\') {
+      isLeftInDoubleQuotes = !isLeftInDoubleQuotes;
+    }
+    if (s[rightCursor] === '"' && s[rightCursor - 1] !== '\\') {
+      isRightInDoubleQuotes = !isRightInDoubleQuotes;
+    }
+
+    if (s[rightCursor] === '(' && rightCursor !== endPosition && !isRightInDoubleQuotes && s[rightCursor - 1] !== '\\') {
       rightOpenedCount++;
     }
-    if (s[leftCursor] === ')' && leftCursor !== startPosition) {
+    if (s[leftCursor] === ')' && leftCursor !== startPosition && !isLeftInDoubleQuotes && s[leftCursor - 1] !== '\\') {
       leftClosedCount++;
     }
-    if (s[rightCursor] !== ')') {
+    if (s[rightCursor] !== ')' || isRightInDoubleQuotes || s[rightCursor - 1] === '\\') {
       rightCursor++;
     } else if (rightOpenedCount > 0) {
       rightOpenedCount--;
       rightCursor++;
     }
-    if (s[leftCursor] !== '(') {
+    if (s[leftCursor] !== '(' || isLeftInDoubleQuotes || s[leftCursor - 1] === '\\') {
       leftCursor--;
     } else if (leftClosedCount > 0) {
       leftClosedCount--;
       leftCursor--;
     }
-  } while (s[rightCursor] !== ')' || s[leftCursor] !== '(' || rightOpenedCount > 0 || leftClosedCount > 0);
+  } while (s[rightCursor] !== ')' || isRightInDoubleQuotes || isLeftInDoubleQuotes || s[leftCursor] !== '(' || rightOpenedCount > 0 || leftClosedCount > 0);
 
   return {
     start: leftCursor,
     end: rightCursor,
   };
+};
+
+const findWrappingBrackets = (s: string, startPosition: number, endPosition: number) => {
+  return findWrappingBracketsNested(s, startPosition, endPosition, false)
+    || findWrappingBracketsNested(s, startPosition, endPosition, true);
 };
 
 const manageableCommand = [
@@ -132,7 +148,6 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
       const value = editor.getValue();
 
       // TODO: improvements to implement:
-      // TODO: deal with a bug when "(" or ")" counts for command parsing
       // TODO: add memo for non Wolfgames stuff (to not re-render entire editor because of custom toolbar)
       // TODO: add parser for system passages which checks for dm item that aren't used and colors them red
       // TODO: "format" button that runs all dm cleaners + orders passages
