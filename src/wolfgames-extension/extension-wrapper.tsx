@@ -10,12 +10,12 @@ import {
 import {TwinejsInitiateEvent} from '../../../shared/messaging/events/twinejs-initiate.event';
 import {TwinejsInitiationDoneEvent} from '../../../shared/messaging/events/twinejs-initiation-done.event';
 import {
-	createStory,
-	deleteStory,
-	importStories,
-	passageDefaults,
-	updatePassage,
-	useStoriesContext
+  createStory,
+  deleteStory,
+  importStories,
+  passageDefaults,
+  updatePassage, updateStory,
+  useStoriesContext,
 } from '../store/stories';
 import { useHistory, useLocation } from 'react-router-dom';
 import {setPref, usePrefsContext} from '../store/prefs';
@@ -351,6 +351,19 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 				return;
 			}
 
+      dispatch(updateStory(storiesRef.current, story, {
+        passages: story.passages.map(p => {
+          if (p.name === mappersDataNodeName && message.data.mappersPassageContent !== undefined) {
+            return {
+              ...p,
+              text: message.data.mappersPassageContent,
+            };
+          }
+
+          return p;
+        }),
+      }));
+
       let maxPassageX = 0;
       const currentPassageNamesSet = new Set(story.passages.map(p => {
         if (p.left > maxPassageX) {
@@ -371,21 +384,6 @@ export const ExtensionWrapper: React.FC = ({children}) => {
       const passagesToAdd = message.data.items.map(
         item => ({ ...item, name: getUniqueVersion(item.name) })
       );
-      const passagesToAddGrouped = passagesToAdd.reduce<Record<string, TwinejsAddStoryItemsEvent['data']['items'][0]>>((acc, passage) => {
-        acc[passage.uid] = passage;
-
-        return acc;
-      }, {});
-
-      const passagesPathsMap = message.data.relations.reduce<Record<string, Array<string>>>((acc, relation) => {
-        if (acc[relation.sourceUid]) {
-          acc[relation.sourceUid].push(passagesToAddGrouped[relation.targetUid].name);
-        } else {
-          acc[relation.sourceUid] = [passagesToAddGrouped[relation.targetUid].name];
-        }
-
-        return acc;
-      }, {});
 
       const basePassageX = maxPassageX + 200;
 
@@ -398,7 +396,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
             basePassageX + x * 4,
             y * 4,
             passage.name,
-            `${passage.description}\n\n${passagesPathsMap[passage.uid]?.map(target => `[[${target}]]`).join('\n')}`,
+            passage.content,
             []
           )
         );
