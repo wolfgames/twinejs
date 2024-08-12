@@ -149,6 +149,9 @@ export const startupDataMapper = (evidenceData: TwineEvidence) => {
 	const introductionsMapped = `(set: $introductions_evidence to (a:${evidenceData.introductions
 		.map(interviewEvidenceToData)
 		.join(',')}))`;
+	const cctvMapped = `(set: $cctv_evidence to (a:${evidenceData.cctv
+		.map(interviewEvidenceToData)
+		.join(',')}))`;
 	const nonesMapped = `(set: $nones_evidence to (a:${evidenceData.nones
 		.map(interviewEvidenceToData)
 		.join(',')}))`;
@@ -164,6 +167,7 @@ export const startupDataMapper = (evidenceData: TwineEvidence) => {
   ...$interviews_evidence,
   ...$victims_evidence,
   ...$introductions_evidence,
+  ...$cctv_evidence,
   ...$nones_evidence
 ))`;
 
@@ -187,6 +191,7 @@ export const startupDataMapper = (evidenceData: TwineEvidence) => {
 		interviewsMapped,
 		victimsMapped,
 		introductionsMapped,
+    cctvMapped,
     nonesMapped,
     evidenceList,
 	].join('\n\n') + '\n]';
