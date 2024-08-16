@@ -1,4 +1,4 @@
-import {CreatePassageAction, passageDefaults, Story} from '../store/stories';
+import {CreatePassageAction, Story} from '../store/stories';
 
 export function createCustomPassage(
 	story: Story,
@@ -15,14 +15,13 @@ export function createCustomPassage(
 	if (story.passages.some(passage => passage.name === name)) {
 		throw new Error('Passage with such name already exists');
 	}
-	const defs = passageDefaults();
 
 	const passageGap = 25;
 	const bounds = {
-		height: defs.height,
-		left: Math.max(centerX - defs.width / 2, 0),
-		top: Math.max(centerY - defs.height / 2, 0),
-		width: defs.width
+		left: Math.max(centerX - 100 / 2, 0),
+		top: Math.max(centerY - 100 / 2, 0),
+		height: 100,
+		width: 100
 	};
 
 	if (story.snapToGrid) {
