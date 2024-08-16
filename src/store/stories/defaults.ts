@@ -1,7 +1,8 @@
 import {i18n} from '../../util/i18n';
 import {Passage, Story} from './stories.types';
+import { passageDefaultsWrapper } from '../../wolfgames-extension/passage-defaults-wrapper';
 
-export const passageDefaults = (): Omit<Passage, 'id' | 'story'> => ({
+export const passageDefaults = passageDefaultsWrapper((): Omit<Passage, 'id' | 'story'> => ({
 	height: 100,
 	highlighted: false,
 	left: 0,
@@ -11,7 +12,7 @@ export const passageDefaults = (): Omit<Passage, 'id' | 'story'> => ({
 	text: '',
 	top: 0,
 	width: 100
-});
+}));
 
 export const storyDefaults = (): Omit<Story, 'id'> => ({
 	ifid: '',
