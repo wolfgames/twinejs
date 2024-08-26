@@ -1,4 +1,4 @@
-import {CreatePassageAction, Story} from '../store/stories';
+import { CreatePassageAction, passageDefaults, Story } from '../store/stories';
 
 export function createCustomPassage(
 	story: Story,
@@ -7,6 +7,7 @@ export function createCustomPassage(
 	name: string,
 	text: string,
   tags: Array<string>,
+  useDefaultSize: boolean = false,
 ): CreatePassageAction {
 	if (!Number.isFinite(centerX) || !Number.isFinite(centerY)) {
 		throw new Error('Center must be a finite coordinate pair');
@@ -16,12 +17,16 @@ export function createCustomPassage(
 		throw new Error('Passage with such name already exists');
 	}
 
+  const defs = passageDefaults();
+  const height = useDefaultSize ? defs.height : 100;
+  const width = useDefaultSize ? defs.width : 100;
+
 	const passageGap = 25;
 	const bounds = {
-		left: Math.max(centerX - 100 / 2, 0),
-		top: Math.max(centerY - 100 / 2, 0),
-		height: 100,
-		width: 100
+		left: Math.max(centerX - width / 2, 0),
+		top: Math.max(centerY - height / 2, 0),
+    height,
+    width,
 	};
 
 	if (story.snapToGrid) {

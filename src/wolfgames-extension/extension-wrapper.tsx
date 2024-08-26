@@ -34,6 +34,8 @@ import { imagesData, mappersData } from './internal-nodes-data';
 import {
   TwinejsGetStructureResponseEvent
 } from '../../../shared/messaging/events/twinejs-get-structure-response.event';
+import { TwinejsCreatePassageEvent } from '../../../shared/messaging/events/twinejs-create-passage.event';
+import { rectsIntersect } from '../util/geometry';
 
 const startupDataNodeName = 'Startup';
 const footerDataNodeName = 'Footer';
@@ -346,6 +348,98 @@ export const ExtensionWrapper: React.FC = ({children}) => {
 		};
   // eslint-disable-next-line
 	}, [messagingService]);
+
+	useEffect(() => {
+		if (!messagingService || !messagingService.isSetUp) {
+			return;
+		}
+
+    /**
+     * Original code: [createUntitledPassage](create-untitled-passage.ts#createUntitledPassage)
+     */
+		const createHandler = (message: TwinejsCreatePassageEvent) => {
+			const story = storiesRef.current[0];
+
+			if (!story) {
+				return;
+			}
+
+      const defs = passageDefaults();
+      const parentPassage = story.passages.find(p => p.name === message.data.parentPassageName);
+
+      const left = parentPassage?.left || defs.left;
+      const top = parentPassage?.top || defs.top;
+
+      const passageGap = 25;
+      const bounds = {
+        height: defs.height,
+        left: Math.max(left + defs.width / 2, 0),
+        top: Math.max(top + defs.height / 2, 0),
+        width: defs.width
+      };
+
+      if (story.snapToGrid) {
+        bounds.left = Math.round(bounds.left / passageGap) * passageGap;
+        bounds.top = Math.round(bounds.top / passageGap) * passageGap;
+      }
+
+      const needsMoving = () =>
+        story.passages.some(passage => rectsIntersect(passage, bounds));
+
+      while (needsMoving()) {
+        // Try rightward.
+
+        bounds.left += bounds.width + passageGap;
+
+        if (!needsMoving()) {
+          break;
+        }
+
+        // Try downward.
+
+        bounds.left -= bounds.width + passageGap;
+        bounds.top += bounds.height + passageGap;
+
+        if (!needsMoving()) {
+          break;
+        }
+
+        // Try leftward.
+
+        if (bounds.left >= bounds.width + passageGap) {
+          bounds.left -= bounds.width + passageGap;
+
+          if (!needsMoving()) {
+            break;
+          }
+
+          bounds.left += bounds.width + passageGap;
+        }
+
+        // Move downward permanently and repeat.
+
+        bounds.top += bounds.height + passageGap;
+      }
+
+      dispatch(
+        createCustomPassage(
+          story,
+          bounds.left,
+          bounds.top,
+          message.data.name,
+          '',
+          [],
+          true,
+        )
+      );
+		};
+
+		messagingService.sub(MessagingEventType.TwinejsCreatePassage, createHandler);
+
+		return () => {
+			messagingService.unsub(MessagingEventType.TwinejsCreatePassage, createHandler);
+		};
+	}, [messagingService, dispatch]);
 
 	useEffect(() => {
 		if (!messagingService || !messagingService.isSetUp) {
