@@ -8,6 +8,7 @@ import {
 	PassageMapProps
 } from '../../components/passage/passage-map';
 import {Rect, rectsIntersect} from '../../util/geometry';
+import { withWolfgames } from '../../wolfgames-extension/passage-map-hoc';
 
 export interface MarqueeablePassageMapProps
 	extends PassageMapProps,
@@ -23,7 +24,7 @@ export interface MarqueeablePassageMapProps
  */
 export const MarqueeablePassageMap: React.FC<
 	MarqueeablePassageMapProps
-> = props => {
+> = withWolfgames(props => {
 	const {container, onSelectRect, ...other} = props;
 	const [temporaryRect, setTemporaryRect] = React.useState<Rect>();
 	const [temporaryAdditive, setTemporaryAdditive] = React.useState<boolean>();
@@ -80,4 +81,4 @@ export const MarqueeablePassageMap: React.FC<
 			<PassageMap {...other} passages={innerPassages} />
 		</>
 	);
-};
+});
