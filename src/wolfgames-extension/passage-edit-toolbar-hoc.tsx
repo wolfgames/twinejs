@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as ReactDOM from 'react-dom';
+import throttle from 'lodash/throttle';
 import {
   IconCirclePlus,
   IconWand,
@@ -27,6 +28,8 @@ import { TwinejsGeneratePassageEvent } from '../../../shared/messaging/events/tw
 import {
   TwinejsGeneratePassageResponseEvent
 } from '../../../shared/messaging/events/twinejs-generate-passage-response.event';
+import { EditEvidenceButton } from './components/edit-evidence-button';
+import { TwinejsEditEvidenceEvent } from '../../../shared/messaging/events/twinejs-edit-evidence.event';
 
 const findWrappingBracketsNested = (s: string, startPosition: number, endPosition: number, currentQuotesState = false) => {
   let leftCursor = startPosition;
@@ -122,6 +125,46 @@ const extractManageableCommands = (value: string, index: number) => {
       }
     }
   } while (currentCommand !== null)
+
+  return res;
+};
+
+const extractEvidence = (value: string) => {
+  const res: Array<{
+    evidenceName: string,
+    value: string,
+    startPosition: number,
+    endPosition: number,
+  }> = [];
+
+  const evidenceMarker = `(${TwineCustomCommand.Evidence}:`;
+  const evidenceMarkerLength = evidenceMarker.length;
+
+  let currentPosition = -1;
+
+  do {
+    currentPosition = value.indexOf(evidenceMarker, currentPosition + 1);
+
+    if (currentPosition > -1) {
+      const currentEvidence = findWrappingBrackets(value, currentPosition + 1, currentPosition + 1);
+
+      if (currentEvidence) {
+        const evidenceCandidate = value.slice(currentEvidence.start, currentEvidence.end + 1);
+
+        const currentStartIndex = currentEvidence.start - 1;
+        const currentEndIndex = currentEvidence.end + 1;
+
+        if (evidenceCandidate.startsWith(evidenceMarker)) {
+          res.push({
+            evidenceName: evidenceCandidate.replace('\n', '').slice(evidenceMarkerLength + 2, -2).trim(),
+            value: evidenceCandidate,
+            startPosition: currentStartIndex + 1,
+            endPosition: currentEndIndex,
+          });
+        }
+      }
+    }
+  } while (currentPosition !== -1)
 
   return res;
 };
@@ -448,6 +491,64 @@ export const withWolfgames = (StoryFormatToolbar: React.FC<StoryFormatToolbarPro
         widgets.forEach(div => div.remove());
       };
     }, [props.editor, stories, dialogs, messagingService, selectedCommandsMap]);
+
+    useEffect(() => {
+      let widgets: Array<HTMLDivElement> = [];
+
+      const createEvidenceButtons = throttle(() => {
+        widgets.forEach(div => div.remove());
+
+        const editor: Editor | undefined = props.editor;
+
+        if (!editor || !messagingService) {
+          return;
+        }
+
+        const value = editor.getValue();
+
+        const evidenceItems = extractEvidence(value);
+
+        widgets = evidenceItems.map((evidence, index) => {
+          if (!props.editor) {
+            throw new Error('Unexpected editor state');
+          }
+
+          const div = document.createElement("div");
+
+          ReactDOM.render(
+            <div className="evidence-edit-widget-wrapper">
+              <EditEvidenceButton key={`edit-evidence-button-${index}`} onClick={() => {
+                if (!props.editor || !messagingService) {
+                  throw new Error('Unexpected editor state');
+                }
+
+                messagingService.send(new TwinejsEditEvidenceEvent({
+                  evidenceName: evidence.evidenceName,
+                }));
+              }} />
+            </div>,
+            div
+          );
+
+          div.style.zIndex = '2';
+          props.editor.addWidget(props.editor.posFromIndex(evidence.startPosition), div, true);
+
+          return div;
+        });
+      }, 500);
+
+      props.editor?.on('change', createEvidenceButtons);
+
+      const timeout = setTimeout(() => {
+        createEvidenceButtons();
+      }, 200);
+
+      return () => {
+        props.editor?.off('change', createEvidenceButtons)
+        clearTimeout(timeout);
+        widgets.forEach(div => div.remove());
+      };
+    }, [props.editor, messagingService]);
 
     return <>
       <div className="wolfgames-toolbar">
