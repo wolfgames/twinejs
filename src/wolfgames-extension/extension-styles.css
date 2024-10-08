@@ -8,3 +8,11 @@ div .route-toolbar-top {
 		}
 	}
 }
+
+.tag-stripe span {
+    height: fit-content;
+    color: black;
+    span {
+        height: 100%;
+    }
+}

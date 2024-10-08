@@ -36,6 +36,8 @@ import {
 } from '../../../shared/messaging/events/twinejs-get-structure-response.event';
 import { TwinejsCreatePassageEvent } from '../../../shared/messaging/events/twinejs-create-passage.event';
 import { rectsIntersect } from '../util/geometry';
+import { Color } from '../util/color';
+import { setTagColors } from './action-creators/tag-colors';
 
 const startupDataNodeName = 'Startup';
 const footerDataNodeName = 'Footer';
@@ -488,6 +490,7 @@ export const ExtensionWrapper: React.FC = ({children}) => {
       );
 
       const basePassageX = maxPassageX + 200;
+      const tagColorMap: Record<string, Color> = {};
 
       passagesToAdd.forEach(passage => {
         const { x, y } = message.data.nodePositions[passage.uid] || { x: 0, y: 0 };
@@ -499,10 +502,16 @@ export const ExtensionWrapper: React.FC = ({children}) => {
             y * 4,
             passage.name,
             passage.content,
-            []
+            passage.tags.map(t => t.name),
           )
         );
+
+        passage.tags.forEach(t => {
+          tagColorMap[t.name] = t.color;
+        });
       });
+
+      dispatch(setTagColors(story, tagColorMap));
 		};
 
 		messagingService.sub(MessagingEventType.AddStoryItems, addItemsHandler);
