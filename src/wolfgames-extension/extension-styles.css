@@ -10,7 +10,7 @@ div .route-toolbar-top {
 }
 
 .tag-stripe span {
-    height: fit-content;
+    height: fit-content !important;
     color: black;
     span {
         height: 100%;
